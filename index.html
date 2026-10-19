@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1115"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
+<title>Interval Timer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#e8eaed;font:16px system-ui,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #222}
+h1{font-size:20px;margin:0}button{font:inherit;color:#e8eaed;background:#252a33;border:0;border-radius:12px;padding:12px 16px;cursor:pointer}
+button.p{background:#22c55e;color:#06210f;font-weight:700}button.d{background:#5b1d1d}.v{display:none;padding:16px;max-width:640px;margin:auto}.v.on{display:block}
+.card{background:#181c23;border-radius:14px;padding:14px;margin-bottom:12px}.card h3{margin:0 0 4px}.muted{color:#9aa0a6;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}label{display:block;margin:10px 0 4px;color:#9aa0a6;font-size:14px}
+input,select{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid #333;background:#0f1115;color:#e8eaed}
+.iv{display:grid;grid-template-columns:1fr 90px 44px 44px;gap:6px;margin-bottom:6px}.iv input[type=color]{padding:2px;height:44px}
+#run{position:fixed;inset:0;display:none;flex-direction:column;padding:16px;transition:background .3s}#run.on{display:flex}
+#rName{font-size:clamp(28px,8vw,56px);font-weight:700;text-align:center;margin-top:4vh}
+#rTime{font-size:clamp(90px,30vw,260px);font-weight:800;text-align:center;font-variant-numeric:tabular-nums;line-height:1;margin:4vh 0}
+#rInfo,#rNext{text-align:center;font-size:clamp(18px,5vw,30px)}#rNext{color:#cfd3d8;margin-top:8px}
+.ctl{margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ctl button{padding:20px 0;font-size:20px;background:#0008}
+#bStart{grid-column:1/-1;font-size:28px;padding:24px;background:#fff;color:#000;font-weight:800}
+.bar{height:8px;background:#0006;border-radius:4px;overflow:hidden}.bar div{height:100%;background:#fff;width:0}
+.chk{display:flex;align-items:center;gap:10px;margin:12px 0}.chk input{width:auto;transform:scale(1.4)}
+</style></head><body>
+<header><h1>Interval Timer</h1><div><button id="navSet">⚙</button></div></header>
+<div id="list" class="v on"><div id="wl"></div><button class="p" id="newW" style="width:100%">+ New workout</button></div>
+<div id="edit" class="v">
+<label>Name</label><input id="eName">
+<label>Prep / warm-up countdown (mm:ss, 0 = none)</label><input id="ePrep">
+<label>Intervals (name, mm:ss, color)</label><div id="eIv"></div><button id="addIv">+ Add interval</button>
+<label>Rounds</label><input id="eRounds" type="number" min="1">
+<label>Rest between rounds (mm:ss, 0 = none)</label><input id="eRest">
+<label>Repeat whole block (times)</label><input id="eBlocks" type="number" min="1">
+<label>Rest between blocks (mm:ss)</label><input id="eBRest">
+<div class="row"><button class="p" id="saveW">Save</button><button id="cancelW">Cancel</button></div></div>
+<div id="settings" class="v">
+<label>Beep volume</label><input id="sVol" type="range" min="0" max="1" step="0.05">
+<label>Warning beeps before interval end (seconds, 0 = off)</label><select id="sWarn"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+<div class="chk"><input type="checkbox" id="sVoice"><span>Voice callouts (say interval name)</span></div>
+<div class="chk"><input type="checkbox" id="sVib"><span>Vibrate on interval change</span></div>
+<div class="row"><button id="testB">Test beep</button><button class="p" id="sDone">Done</button></div>
+<p class="muted">Everything is stored only on this device. No accounts, no tracking.</p></div>
+<div id="run"><div class="bar"><div id="rBar"></div></div><div id="rName"></div><div id="rTime">0:00</div><div id="rInfo"></div><div id="rNext"></div>
+<div class="ctl"><button id="bStart">Start</button><button id="bBack">⏮</button><button id="bReset">↺</button><button id="bSkip">⏭</button><button id="bExit">✕</button></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const parse=t=>{t=String(t).trim();if(!t)return 0;const p=t.split(':').map(Number);return p.length>1?p[0]*60+(p[1]||0):p[0]||0};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const DEF=[
+{id:uid(),name:'Scales & Chords',prep:10,intervals:[{name:'Scales',dur:300,color:'#2563eb'},{name:'Rest',dur:60,color:'#374151'},{name:'Chord changes',dur:300,color:'#16a34a'}],rounds:3,rest:0,blocks:1,brest:0},
+{id:uid(),name:'One-Minute Changes',prep:5,intervals:[{name:'Chord change drill',dur:60,color:'#dc2626'},{name:'Shake out',dur:15,color:'#374151'}],rounds:8,rest:0,blocks:1,brest:0},
+{id:uid(),name:'Full Practice Session',prep:10,intervals:[{name:'Warm-up / finger exercises',dur:300,color:'#f59e0b'},{name:'Technique',dur:600,color:'#2563eb'},{name:'Repertoire / songs',dur:900,color:'#16a34a'},{name:'Improvise',dur:300,color:'#9333ea'}],rounds:1,rest:0,blocks:1,brest:0}];
+let W=JSON.parse(localStorage.getItem('it_workouts')||'null')||DEF;
+let S=Object.assign({vol:.7,warn:0,voice:false,vib:true},JSON.parse(localStorage.getItem('it_settings')||'{}'));
+const saveAll=()=>{localStorage.setItem('it_workouts',JSON.stringify(W));localStorage.setItem('it_settings',JSON.stringify(S))};saveAll();
+function show(v){['list','edit','settings'].forEach(x=>$(x).classList.toggle('on',x===v))}
+function total(w){const r=w.intervals.reduce((a,b)=>a+b.dur,0)*w.rounds+w.rest*(w.rounds-1);return w.prep+r*w.blocks+w.brest*(w.blocks-1)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function renderList(){$('wl').innerHTML=W.map((w,i)=>`<div class="card"><h3>${esc(w.name)}</h3><div class="muted">${w.intervals.length} intervals × ${w.rounds} rounds${w.blocks>1?' × '+w.blocks+' blocks':''} · ${fmt(total(w))} total</div>
+<div class="row"><button class="p" data-a="run" data-i="${i}">▶ Start</button><button data-a="edit" data-i="${i}">Edit</button><button data-a="dup" data-i="${i}">Duplicate</button><button class="d" data-a="del" data-i="${i}">Delete</button></div></div>`).join('')||'<p class="muted">No workouts yet.</p>'}
+$('wl').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i,a=b.dataset.a;
+if(a==='run')startRun(W[i]);if(a==='edit')openEdit(i);if(a==='dup'){W.splice(i+1,0,{...structuredClone(W[i]),id:uid(),name:W[i].name+' (copy)'});saveAll();renderList()}
+if(a==='del'&&confirm('Delete "'+W[i].name+'"?')){W.splice(i,1);saveAll();renderList()}};
+let editIdx=-1;
+function ivRow(v){const d=document.createElement('div');d.className='iv';d.innerHTML=`<input class="n" value="${esc(v.name)}" placeholder="Name"><input class="t" value="${fmt(v.dur)}" inputmode="numeric"><input class="c" type="color" value="${v.color||'#2563eb'}"><button class="d">✕</button>`;d.querySelector('button').onclick=()=>d.remove();$('eIv').appendChild(d)}
+function openEdit(i){editIdx=i;const w=i<0?{name:'New workout',prep:10,intervals:[{name:'Practice',dur:300,color:'#2563eb'}],rounds:1,rest:0,blocks:1,brest:0}:W[i];
+$('eName').value=w.name;$('ePrep').value=fmt(w.prep);$('eRounds').value=w.rounds;$('eRest').value=fmt(w.rest);$('eBlocks').value=w.blocks;$('eBRest').value=fmt(w.brest);$('eIv').innerHTML='';w.intervals.forEach(ivRow);show('edit')}
+$('newW').onclick=()=>openEdit(-1);$('addIv').onclick=()=>ivRow({name:'',dur:60,color:'#16a34a'});$('cancelW').onclick=()=>show('list');
+$('saveW').onclick=()=>{const iv=[...$('eIv').children].map(d=>({name:d.querySelector('.n').value||'Interval',dur:parse(d.querySelector('.t').value),color:d.querySelector('.c').value})).filter(x=>x.dur>0);
+if(!iv.length)return alert('Add at least one interval with a duration.');
+const w={id:editIdx<0?uid():W[editIdx].id,name:$('eName').value||'Workout',prep:parse($('ePrep').value),intervals:iv,rounds:Math.max(1,+$('eRounds').value||1),rest:parse($('eRest').value),blocks:Math.max(1,+$('eBlocks').value||1),brest:parse($('eBRest').value)};
+if(editIdx<0)W.push(w);else W[editIdx]=w;saveAll();renderList();show('list')};
+$('navSet').onclick=()=>{$('sVol').value=S.vol;$('sWarn').value=S.warn;$('sVoice').checked=S.voice;$('sVib').checked=S.vib;show('settings')};
+$('sDone').onclick=()=>{S.vol=+$('sVol').value;S.warn=+$('sWarn').value;S.voice=$('sVoice').checked;S.vib=$('sVib').checked;saveAll();show('list')};
+$('testB').onclick=()=>{S.vol=+$('sVol').value;beep(880,.25)};
+// audio
+let ac;function beep(f=880,d=.2){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.type='sine';const t=ac.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(S.vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}
+function say(t){if(S.voice&&'speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t))}}
+// run
+let seq=[],idx=0,left=0,running=false,last=0,raf,wl=null,lastWarn=-1,cur;
+function build(w){const s=[];if(w.prep>0)s.push({name:'Get ready',dur:w.prep,color:'#4b5563',info:''});
+for(let b=1;b<=w.blocks;b++){for(let r=1;r<=w.rounds;r++){w.intervals.forEach(v=>s.push({...v,info:`Round ${r} of ${w.rounds}`+(w.blocks>1?` · Block ${b}/${w.blocks}`:'')}));
+if(r<w.rounds&&w.rest>0)s.push({name:'Rest',dur:w.rest,color:'#374151',info:`Rest · next round ${r+1} of ${w.rounds}`})}
+if(b<w.blocks&&w.brest>0)s.push({name:'Block rest',dur:w.brest,color:'#374151',info:`Block ${b+1} next`})}return s}
+function startRun(w){cur=w;seq=build(w);idx=0;left=seq[0].dur;running=false;$('run').classList.add('on');$('bStart').textContent='Start';draw()}
+function draw(){const s=seq[idx];if(!s){$('rName').textContent='Done! 🎸';$('rTime').textContent='0:00';$('rInfo').textContent=cur.name;$('rNext').textContent='';$('run').style.background='#14532d';$('rBar').style.width='100%';return}
+$('run').style.background=s.color||'#1f2937';$('rName').textContent=s.name;$('rTime').textContent=fmt(left);$('rInfo').textContent=s.info;
+$('rNext').textContent=seq[idx+1]?'Next: '+seq[idx+1].name+' ('+fmt(seq[idx+1].dur)+')':'Next: finish';$('rBar').style.width=(100*(1-left/s.dur))+'%'}
+function enter(i,announce=true){idx=i;lastWarn=-1;if(idx>=seq.length){running=false;beep(660,.35);setTimeout(()=>beep(990,.5),380);say('Workout complete');vib([200,100,200]);releaseWL();$('bStart').textContent='Restart';draw();return}
+left=seq[idx].dur;if(announce){beep(880,.3);say(seq[idx].name);vib(250)}draw()}
+function vib(p){if(S.vib&&navigator.vibrate)navigator.vibrate(p)}
+function tick(now){if(!running)return;const dt=(now-last)/1000;last=now;left-=dt;
+const sec=Math.ceil(left);if(S.warn>0&&sec<=S.warn&&sec>0&&sec!==lastWarn){lastWarn=sec;beep(1200,.08)}
+if(left<=0){const over=-left;enter(idx+1);if(running&&idx<seq.length)left-=over}draw();if(running)raf=requestAnimationFrame(tick)}
+async function getWL(){try{if('wakeLock'in navigator)wl=await navigator.wakeLock.request('screen')}catch(e){}}
+function releaseWL(){try{wl&&wl.release()}catch(e){}wl=null}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running)getWL()});
+function play(){if(idx>=seq.length){startRun(cur)}running=true;last=performance.now();$('bStart').textContent='Pause';beep(880,.15);if(left===seq[idx].dur&&idx===0)say(seq[0].name);getWL();raf=requestAnimationFrame(tick)}
+function pause(){running=false;cancelAnimationFrame(raf);$('bStart').textContent='Resume';releaseWL()}
+$('bStart').onclick=()=>running?pause():play();
+$('bSkip').onclick=()=>{if(idx<seq.length)enter(idx+1)};
+$('bBack').onclick=()=>{const s=seq[idx];if(s&&left<s.dur-2)enter(idx,false);else enter(Math.max(0,idx-1),false)};
+$('bReset').onclick=()=>{pause();startRun(cur)};
+$('bExit').onclick=()=>{pause();$('run').classList.remove('on')};
+window.__it={get state(){return{idx,left,running,len:seq.length,name:seq[idx]&&seq[idx].name}}};
+renderList();
+if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js');
+</script></body></html>
