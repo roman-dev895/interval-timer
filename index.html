@@ -10,14 +10,19 @@ button.p{background:#22c55e;color:#06210f;font-weight:700}button.d{background:#5
 .card{background:#181c23;border-radius:14px;padding:14px;margin-bottom:12px}.card h3{margin:0 0 4px}.muted{color:#9aa0a6;font-size:14px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}label{display:block;margin:10px 0 4px;color:#9aa0a6;font-size:14px}
 input,select{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid #333;background:#0f1115;color:#e8eaed}
-.iv{display:grid;grid-template-columns:1fr 90px 44px 44px;gap:6px;margin-bottom:6px}.iv input[type=color]{padding:2px;height:44px}
+.iv{display:grid;grid-template-columns:1fr 90px 44px 44px;gap:6px;margin-bottom:6px}.sw{padding:0;height:44px;border:2px solid #fff3}
+#pal,#toast{position:fixed;z-index:50}#pal{inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:16px}#pal.on{display:flex}
+#palBox{background:#181c23;border-radius:16px;padding:16px;width:100%;max-width:420px}#palGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:10px 0}
+#palGrid button{aspect-ratio:1;padding:0;border-radius:10px;font-weight:800;font-size:13px}#palGrid button.sel{outline:3px solid #fff;outline-offset:2px}
+#toast{left:12px;right:12px;bottom:16px;display:none;background:#22c55e;color:#06210f;font-weight:700;text-align:center;padding:16px;border-radius:14px}#toast.on{display:block}
+.pv{display:grid;grid-template-columns:1fr auto;gap:8px}.sub{border-left:3px solid #333;padding-left:12px;margin:4px 0 8px}
 #run{position:fixed;inset:0;display:none;flex-direction:column;padding:16px;transition:background .3s}#run.on{display:flex}
 #rName{font-size:clamp(28px,8vw,56px);font-weight:700;text-align:center;margin-top:4vh}
 #rTime{font-size:clamp(90px,30vw,260px);font-weight:800;text-align:center;font-variant-numeric:tabular-nums;line-height:1;margin:4vh 0}
-#rInfo,#rNext{text-align:center;font-size:clamp(18px,5vw,30px)}#rNext{color:#cfd3d8;margin-top:8px}
-.ctl{margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ctl button{padding:20px 0;font-size:20px;background:#0008}
+#rInfo,#rNext{text-align:center;font-size:clamp(18px,5vw,30px)}#rNext{opacity:.8;margin-top:8px}
+.ctl{margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ctl button{padding:20px 0;font-size:20px;background:#0008;color:#fff}
 #bStart{grid-column:1/-1;font-size:28px;padding:24px;background:#fff;color:#000;font-weight:800}
-.bar{height:8px;background:#0006;border-radius:4px;overflow:hidden}.bar div{height:100%;background:#fff;width:0}
+.bar{height:8px;background:#0006;border-radius:4px;overflow:hidden}.bar div{height:100%;background:currentColor;width:0}
 .chk{display:flex;align-items:center;gap:10px;margin:12px 0}.chk input{width:auto;transform:scale(1.4)}
 </style></head><body>
 <header><h1>Interval Timer</h1><div><button id="navSet">⚙</button></div></header>
@@ -32,12 +37,27 @@ input,select{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px 
 <label>Rest between blocks (mm:ss)</label><input id="eBRest">
 <div class="row"><button class="p" id="saveW">Save</button><button id="cancelW">Cancel</button></div></div>
 <div id="settings" class="v">
+<div class="card"><h3>Sounds</h3>
 <label>Beep volume</label><input id="sVol" type="range" min="0" max="1" step="0.05">
-<label>Warning beeps before interval end (seconds, 0 = off)</label><select id="sWarn"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+<label>Interval change sound</label><div class="pv"><select id="sBeep"></select><button id="pvBeep">▶ Preview</button></div>
+<label>Workout finished sound</label><div class="pv"><select id="sEnd"></select><button id="pvEnd">▶ Preview</button></div>
+<label>Warning ticks before interval end (seconds, 0 = off)</label><div class="pv"><select id="sWarn"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><button id="pvWarn">▶ Preview</button></div>
+</div>
+<div class="card"><h3>Voice</h3>
 <div class="chk"><input type="checkbox" id="sVoice"><span>Voice callouts (say interval name)</span></div>
-<div class="chk"><input type="checkbox" id="sVib"><span>Vibrate on interval change</span></div>
-<div class="row"><button id="testB">Test beep</button><button class="p" id="sDone">Done</button></div>
-<p class="muted">Everything is stored only on this device. No accounts, no tracking.</p></div>
+<div id="vOpts" class="sub">
+<label>Voice</label><select id="sVName"></select>
+<label>Speed <span id="rateV"></span></label><input id="sRate" type="range" min="0.5" max="2" step="0.1">
+<label>Pitch <span id="pitchV"></span></label><input id="sPitch" type="range" min="0.5" max="2" step="0.1">
+<div class="row"><button id="testV">🔊 Test voice</button></div>
+<p class="muted" id="vNote"></p></div></div>
+<div class="card"><div class="chk"><input type="checkbox" id="sVib"><span>Vibrate on interval change</span></div></div>
+<div class="row"><button class="p" id="sDone">Done</button></div>
+<p class="muted">Everything is stored only on this device. No accounts, no tracking. <span id="ver"></span></p></div>
+<div id="pal"><div id="palBox"><h3 style="margin:0">Pick a color</h3><div id="palGrid"></div>
+<label>Custom color</label><input type="color" id="palCustom" style="height:48px;padding:2px">
+<div class="row"><button class="p" id="palUse">Use custom color</button><button id="palCancel">Cancel</button></div></div></div>
+<div id="toast">Update ready. Tap here to reload.</div>
 <div id="run"><div class="bar"><div id="rBar"></div></div><div id="rName"></div><div id="rTime">0:00</div><div id="rInfo"></div><div id="rNext"></div>
 <div class="ctl"><button id="bStart">Start</button><button id="bBack">⏮</button><button id="bReset">↺</button><button id="bSkip">⏭</button><button id="bExit">✕</button></div></div>
 <script>
@@ -49,8 +69,13 @@ const DEF=[
 {id:uid(),name:'Scales & Chords',prep:10,intervals:[{name:'Scales',dur:300,color:'#2563eb'},{name:'Rest',dur:60,color:'#374151'},{name:'Chord changes',dur:300,color:'#16a34a'}],rounds:3,rest:0,blocks:1,brest:0},
 {id:uid(),name:'One-Minute Changes',prep:5,intervals:[{name:'Chord change drill',dur:60,color:'#dc2626'},{name:'Shake out',dur:15,color:'#374151'}],rounds:8,rest:0,blocks:1,brest:0},
 {id:uid(),name:'Full Practice Session',prep:10,intervals:[{name:'Warm-up / finger exercises',dur:300,color:'#f59e0b'},{name:'Technique',dur:600,color:'#2563eb'},{name:'Repertoire / songs',dur:900,color:'#16a34a'},{name:'Improvise',dur:300,color:'#9333ea'}],rounds:1,rest:0,blocks:1,brest:0}];
-let W=JSON.parse(localStorage.getItem('it_workouts')||'null')||DEF;
-let S=Object.assign({vol:.7,warn:0,voice:false,vib:true},JSON.parse(localStorage.getItem('it_settings')||'{}'));
+const VER='2';
+function loadJSON(k,d){try{const v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}}
+let W=loadJSON('it_workouts',null);W=Array.isArray(W)?W:DEF;
+// migration: fill any missing fields with defaults (old saved workouts keep everything they had)
+W=W.filter(w=>w&&typeof w==='object').map(w=>({...w,id:w.id||uid(),name:w.name||'Workout',prep:+w.prep||0,rounds:Math.max(1,+w.rounds||1),rest:+w.rest||0,blocks:Math.max(1,+w.blocks||1),brest:+w.brest||0,
+intervals:(Array.isArray(w.intervals)?w.intervals:[]).map(v=>({...v,name:v.name||'Interval',dur:+v.dur||0,color:v.color||'#2563eb'}))}));
+let S=Object.assign({vol:.7,warn:0,voice:false,vib:true,beepSound:'classic',endSound:'fanfare',voiceName:'',voiceLang:'',rate:1,pitch:1},loadJSON('it_settings',{})||{});
 const saveAll=()=>{localStorage.setItem('it_workouts',JSON.stringify(W));localStorage.setItem('it_settings',JSON.stringify(S))};saveAll();
 function show(v){['list','edit','settings'].forEach(x=>$(x).classList.toggle('on',x===v))}
 function total(w){const r=w.intervals.reduce((a,b)=>a+b.dur,0)*w.rounds+w.rest*(w.rounds-1);return w.prep+r*w.blocks+w.brest*(w.blocks-1)}
@@ -61,20 +86,85 @@ $('wl').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.d
 if(a==='run')startRun(W[i]);if(a==='edit')openEdit(i);if(a==='dup'){W.splice(i+1,0,{...structuredClone(W[i]),id:uid(),name:W[i].name+' (copy)'});saveAll();renderList()}
 if(a==='del'&&confirm('Delete "'+W[i].name+'"?')){W.splice(i,1);saveAll();renderList()}};
 let editIdx=-1;
-function ivRow(v){const d=document.createElement('div');d.className='iv';d.innerHTML=`<input class="n" value="${esc(v.name)}" placeholder="Name"><input class="t" value="${fmt(v.dur)}" inputmode="numeric"><input class="c" type="color" value="${v.color||'#2563eb'}"><button class="d">✕</button>`;d.querySelector('button').onclick=()=>d.remove();$('eIv').appendChild(d)}
+function ivRow(v){const d=document.createElement('div');d.className='iv';d.innerHTML=`<input class="n" value="${esc(v.name)}" placeholder="Name"><input class="t" value="${fmt(v.dur)}" inputmode="numeric"><button class="sw" type="button" data-c="${esc(v.color||'#2563eb')}" style="background:${esc(v.color||'#2563eb')}" aria-label="Color"></button><button class="d">✕</button>`;d.querySelector('button.d').onclick=()=>d.remove();d.querySelector('.sw').onclick=e=>openPal(e.currentTarget);$('eIv').appendChild(d)}
 function openEdit(i){editIdx=i;const w=i<0?{name:'New workout',prep:10,intervals:[{name:'Practice',dur:300,color:'#2563eb'}],rounds:1,rest:0,blocks:1,brest:0}:W[i];
 $('eName').value=w.name;$('ePrep').value=fmt(w.prep);$('eRounds').value=w.rounds;$('eRest').value=fmt(w.rest);$('eBlocks').value=w.blocks;$('eBRest').value=fmt(w.brest);$('eIv').innerHTML='';w.intervals.forEach(ivRow);show('edit')}
-$('newW').onclick=()=>openEdit(-1);$('addIv').onclick=()=>ivRow({name:'',dur:60,color:'#16a34a'});$('cancelW').onclick=()=>show('list');
-$('saveW').onclick=()=>{const iv=[...$('eIv').children].map(d=>({name:d.querySelector('.n').value||'Interval',dur:parse(d.querySelector('.t').value),color:d.querySelector('.c').value})).filter(x=>x.dur>0);
+$('newW').onclick=()=>openEdit(-1);$('addIv').onclick=()=>{const used=[...$('eIv').querySelectorAll('.sw')].map(b=>b.dataset.c);const c=(PAL.find(p=>!used.includes(p[1]))||PAL[6])[1];ivRow({name:'',dur:60,color:c})};$('cancelW').onclick=()=>show('list');
+$('saveW').onclick=()=>{const iv=[...$('eIv').children].map(d=>({name:d.querySelector('.n').value||'Interval',dur:parse(d.querySelector('.t').value),color:d.querySelector('.sw').dataset.c})).filter(x=>x.dur>0);
 if(!iv.length)return alert('Add at least one interval with a duration.');
 const w={id:editIdx<0?uid():W[editIdx].id,name:$('eName').value||'Workout',prep:parse($('ePrep').value),intervals:iv,rounds:Math.max(1,+$('eRounds').value||1),rest:parse($('eRest').value),blocks:Math.max(1,+$('eBlocks').value||1),brest:parse($('eBRest').value)};
 if(editIdx<0)W.push(w);else W[editIdx]=w;saveAll();renderList();show('list')};
-$('navSet').onclick=()=>{$('sVol').value=S.vol;$('sWarn').value=S.warn;$('sVoice').checked=S.voice;$('sVib').checked=S.vib;show('settings')};
-$('sDone').onclick=()=>{S.vol=+$('sVol').value;S.warn=+$('sWarn').value;S.voice=$('sVoice').checked;S.vib=$('sVib').checked;saveAll();show('list')};
-$('testB').onclick=()=>{S.vol=+$('sVol').value;beep(880,.25)};
+$('navSet').onclick=()=>{$('sVol').value=S.vol;$('sWarn').value=S.warn;$('sVoice').checked=S.voice;$('sVib').checked=S.vib;$('sBeep').value=S.beepSound;$('sEnd').value=S.endSound;
+$('sRate').value=S.rate;$('sPitch').value=S.pitch;fillVoices();syncVoiceUI();show('settings')};
+function readSet(){S.vol=+$('sVol').value;S.warn=+$('sWarn').value;S.voice=$('sVoice').checked;S.vib=$('sVib').checked;S.beepSound=$('sBeep').value;S.endSound=$('sEnd').value;
+S.rate=+$('sRate').value;S.pitch=+$('sPitch').value;const v=$('sVName').value;if(v!=='__keep'){const [n,l]=v?JSON.parse(v):['',''];S.voiceName=n;S.voiceLang=l}}
+$('sDone').onclick=()=>{readSet();saveAll();show('list')};
+function syncVoiceUI(){$('vOpts').style.display=$('sVoice').checked?'':'none';$('rateV').textContent='('+(+$('sRate').value).toFixed(1)+'×)';$('pitchV').textContent='('+(+$('sPitch').value).toFixed(1)+')'}
+['sVoice','sRate','sPitch'].forEach(id=>$(id).addEventListener('input',syncVoiceUI));
+$('pvBeep').onclick=()=>{readSet();playSound(S.beepSound)};
+$('pvEnd').onclick=()=>{readSet();playEnd(S.endSound)};
+$('pvWarn').onclick=()=>{readSet();[0,1,2].forEach(i=>setTimeout(tickSound,i*1000))};
+$('testV').onclick=()=>{readSet();say('Scales. Round 1 of 3',true)};
+// voices
+let voices=[];
+function getVoices(){try{voices=('speechSynthesis'in window)?speechSynthesis.getVoices():[]}catch(e){voices=[]}return voices}
+function fillVoices(){getVoices();const sel=$('sVName'),lang=(navigator.language||'en').slice(0,2).toLowerCase();
+const vs=[...voices].sort((a,b)=>{const am=a.lang.toLowerCase().startsWith(lang)?0:1,bm=b.lang.toLowerCase().startsWith(lang)?0:1;return am-bm||a.lang.localeCompare(b.lang)||a.name.localeCompare(b.name)});
+let h='<option value="">Default (phone\'s voice)</option>';let found=!S.voiceName;
+vs.forEach(v=>{const val=JSON.stringify([v.name,v.lang]);const m=v.name===S.voiceName&&v.lang===S.voiceLang;if(m)found=true;h+=`<option value="${esc(val)}"${m?' selected':''}>${esc(v.name)} (${esc(v.lang)})${v.localService===false?' · online':''}</option>`});
+if(!found)h+=`<option value="__keep" selected>${esc(S.voiceName)} (not available right now)</option>`;
+sel.innerHTML=h;if(!S.voiceName)sel.value='';
+$('vNote').textContent=!('speechSynthesis'in window)?'This browser does not support voice.':voices.length?voices.length+' voices available on this device. Voices marked "online" need internet.':'Loading voices… (if none appear, your phone may have no text-to-speech voices installed)'}
+if('speechSynthesis'in window){speechSynthesis.addEventListener?speechSynthesis.addEventListener('voiceschanged',()=>{if($('settings').classList.contains('on'))fillVoices();else getVoices()}):0;[300,1500,4000].forEach(t=>setTimeout(()=>{if(!voices.length){getVoices();if($('settings').classList.contains('on'))fillVoices()}},t))}
+function pickVoice(){if(!S.voiceName)return null;getVoices();return voices.find(v=>v.name===S.voiceName&&v.lang===S.voiceLang)||voices.find(v=>v.name===S.voiceName)||null}
+function say(t,force){if(!(S.voice||force)||!('speechSynthesis'in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);const v=pickVoice();if(v){u.voice=v;u.lang=v.lang}u.rate=S.rate||1;u.pitch=S.pitch||1;speechSynthesis.speak(u)}catch(e){}}
 // audio
-let ac;function beep(f=880,d=.2){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.type='sine';const t=ac.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(S.vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}
-function say(t){if(S.voice&&'speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t))}}
+let ac;function actx(){ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state!=='running')ac.resume();return ac}
+function tone(f,d,o={}){try{const a=actx(),t=a.currentTime+(o.at||0)+.005,osc=a.createOscillator(),g=a.createGain(),pk=Math.max(.0002,S.vol*(o.v??1)),atk=o.atk||.01;
+osc.type=o.type||'sine';osc.frequency.setValueAtTime(f,t);if(o.to)osc.frequency.exponentialRampToValueAtTime(o.to,t+d);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+atk);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+osc.connect(g).connect(a.destination);osc.start(t);osc.stop(t+d+.05)}catch(e){}}
+function noise(d,o={}){try{const a=actx(),t=a.currentTime+(o.at||0)+.005,n=Math.ceil(a.sampleRate*d),b=a.createBuffer(1,n,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<n;i++)x[i]=Math.random()*2-1;
+const src=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();src.buffer=b;fl.type='bandpass';fl.frequency.value=o.f||2000;fl.Q.value=o.q||4;g.gain.setValueAtTime(S.vol*(o.v??1),t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+src.connect(fl).connect(g).connect(a.destination);src.start(t);src.stop(t+d+.02)}catch(e){}}
+function bell(f,at=0,len=1.4,v=1){tone(f,len,{at,v:.7*v,atk:.003});tone(f*2.76,len*.5,{at,v:.25*v,atk:.003});tone(f*5.4,len*.25,{at,v:.12*v,atk:.002})}
+const SOUNDS={
+classic:['Classic beep',()=>tone(880,.3)],
+soft:['Soft sine',()=>tone(587,.7,{v:.6,atk:.08})],
+wood:['Wood block',()=>{tone(820,.09,{type:'triangle',v:.9,atk:.002});noise(.05,{f:1800,q:6,v:.6})}],
+click:['Click',()=>noise(.03,{f:4000,q:2,v:.9})],
+bell:['Bell / chime',()=>bell(1046)],
+digital:['Digital double-beep',()=>{tone(1000,.08,{type:'square',v:.3,atk:.003});tone(1000,.08,{type:'square',v:.3,atk:.003,at:.13})}],
+low:['Low tone',()=>{tone(220,.5,{type:'triangle',v:.9});tone(440,.35,{v:.25})}],
+rise:['Rising blip',()=>tone(500,.22,{to:1100,v:.7})],
+none:['None (silent)',()=>{}]};
+const ENDS={
+fanfare:['Two-tone (classic)',()=>{tone(660,.35);tone(990,.5,{at:.38})}],
+arp:['Chime arpeggio',()=>[523,659,784,1047].forEach((f,i)=>bell(f,i*.18,i===3?1.8:1))],
+triple:['Digital triple',()=>[0,.5,1].forEach(a=>{tone(1000,.08,{type:'square',v:.3,atk:.003,at:a});tone(1000,.08,{type:'square',v:.3,atk:.003,at:a+.13})})],
+bell3:['Bell × 3',()=>[0,.6,1.2].forEach(a=>bell(880,a,1.2))],
+gong:['Low gong',()=>{tone(110,2.5,{type:'triangle',v:.9,atk:.005});tone(165,1.8,{v:.4,atk:.005});tone(297,1.2,{v:.2,atk:.005})}],
+wood3:['Wood blocks',()=>[0,.18,.36].forEach(a=>{tone(820,.09,{type:'triangle',v:.9,atk:.002,at:a});noise(.05,{f:1800,q:6,v:.6,at:a})})],
+none:['None (silent)',()=>{}]};
+const playSound=k=>(SOUNDS[k]||SOUNDS.classic)[1]();
+const playEnd=k=>(ENDS[k]||ENDS.fanfare)[1]();
+const tickSound=()=>{tone(1500,.04,{v:.25,atk:.002})};
+$('sBeep').innerHTML=Object.entries(SOUNDS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('');
+$('sEnd').innerHTML=Object.entries(ENDS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('');
+// colors
+const PAL=[['Red','#dc2626'],['Crimson','#9f1239'],['Orange','#ea580c'],['Amber','#f59e0b'],['Yellow','#facc15'],['Lime','#84cc16'],
+['Green','#16a34a'],['Forest','#14532d'],['Emerald','#059669'],['Teal','#0d9488'],['Cyan','#06b6d4'],['Sky','#0ea5e9'],
+['Blue','#2563eb'],['Navy','#1e3a8a'],['Indigo','#4f46e5'],['Violet','#7c3aed'],['Purple','#9333ea'],['Magenta','#c026d3'],
+['Pink','#db2777'],['Rose','#fb7185'],['Brown','#92400e'],['Sand','#d6b88a'],['Slate','#374151'],['Silver','#cbd5e1']];
+function lum(h){h=String(h||'').replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);if(isNaN(n)||h.length!==6)return 0;
+return [n>>16&255,n>>8&255,n&255].map(c=>{c/=255;return c<=.03928?c/12.92:((c+.055)/1.055)**2.4}).reduce((a,c,i)=>a+c*[.2126,.7152,.0722][i],0)}
+const textOn=h=>{const L=lum(h);return (L+.05)/.05>1.05/(L+.05)?'#000000':'#ffffff'};
+let palT=null;
+$('palGrid').innerHTML=PAL.map(([n,c])=>`<button type="button" data-c="${c}" title="${n}" style="background:${c};color:${textOn(c)}">Aa</button>`).join('');
+function openPal(btn){palT=btn;const c=btn.dataset.c;[...$('palGrid').children].forEach(b=>b.classList.toggle('sel',b.dataset.c===c));$('palCustom').value=/^#[0-9a-f]{6}$/i.test(c)?c:'#2563eb';$('pal').classList.add('on')}
+function setPal(c){if(palT){palT.dataset.c=c;palT.style.background=c}$('pal').classList.remove('on')}
+$('palGrid').onclick=e=>{const b=e.target.closest('button');if(b)setPal(b.dataset.c)};
+$('palUse').onclick=()=>setPal($('palCustom').value);$('palCancel').onclick=()=>$('pal').classList.remove('on');
+$('pal').onclick=e=>{if(e.target.id==='pal')$('pal').classList.remove('on')};
 // run
 let seq=[],idx=0,left=0,running=false,last=0,raf,wl=null,lastWarn=-1,cur;
 function build(w){const s=[];if(w.prep>0)s.push({name:'Get ready',dur:w.prep,color:'#4b5563',info:''});
@@ -82,19 +172,19 @@ for(let b=1;b<=w.blocks;b++){for(let r=1;r<=w.rounds;r++){w.intervals.forEach(v=
 if(r<w.rounds&&w.rest>0)s.push({name:'Rest',dur:w.rest,color:'#374151',info:`Rest · next round ${r+1} of ${w.rounds}`})}
 if(b<w.blocks&&w.brest>0)s.push({name:'Block rest',dur:w.brest,color:'#374151',info:`Block ${b+1} next`})}return s}
 function startRun(w){cur=w;seq=build(w);idx=0;left=seq[0].dur;running=false;$('run').classList.add('on');$('bStart').textContent='Start';draw()}
-function draw(){const s=seq[idx];if(!s){$('rName').textContent='Done! 🎸';$('rTime').textContent='0:00';$('rInfo').textContent=cur.name;$('rNext').textContent='';$('run').style.background='#14532d';$('rBar').style.width='100%';return}
-$('run').style.background=s.color||'#1f2937';$('rName').textContent=s.name;$('rTime').textContent=fmt(left);$('rInfo').textContent=s.info;
+function draw(){const s=seq[idx];if(!s){$('rName').textContent='Done! 🎸';$('rTime').textContent='0:00';$('rInfo').textContent=cur.name;$('rNext').textContent='';$('run').style.background='#14532d';$('run').style.color='#ffffff';$('rBar').style.width='100%';return}
+$('run').style.background=s.color||'#1f2937';$('run').style.color=textOn(s.color||'#1f2937');$('rName').textContent=s.name;$('rTime').textContent=fmt(left);$('rInfo').textContent=s.info;
 $('rNext').textContent=seq[idx+1]?'Next: '+seq[idx+1].name+' ('+fmt(seq[idx+1].dur)+')':'Next: finish';$('rBar').style.width=(100*(1-left/s.dur))+'%'}
-function enter(i,announce=true){idx=i;lastWarn=-1;if(idx>=seq.length){running=false;beep(660,.35);setTimeout(()=>beep(990,.5),380);say('Workout complete');vib([200,100,200]);releaseWL();$('bStart').textContent='Restart';draw();return}
-left=seq[idx].dur;if(announce){beep(880,.3);say(seq[idx].name);vib(250)}draw()}
+function enter(i,announce=true){idx=i;lastWarn=-1;if(idx>=seq.length){running=false;playEnd(S.endSound);say('Workout complete');vib([200,100,200]);releaseWL();$('bStart').textContent='Restart';draw();return}
+left=seq[idx].dur;if(announce){playSound(S.beepSound);say(seq[idx].name);vib(250)}draw()}
 function vib(p){if(S.vib&&navigator.vibrate)navigator.vibrate(p)}
 function tick(now){if(!running)return;const dt=(now-last)/1000;last=now;left-=dt;
-const sec=Math.ceil(left);if(S.warn>0&&sec<=S.warn&&sec>0&&sec!==lastWarn){lastWarn=sec;beep(1200,.08)}
+const sec=Math.ceil(left);if(S.warn>0&&sec<=S.warn&&sec>0&&sec!==lastWarn){lastWarn=sec;tickSound()}
 if(left<=0){const over=-left;enter(idx+1);if(running&&idx<seq.length)left-=over}draw();if(running)raf=requestAnimationFrame(tick)}
 async function getWL(){try{if('wakeLock'in navigator)wl=await navigator.wakeLock.request('screen')}catch(e){}}
 function releaseWL(){try{wl&&wl.release()}catch(e){}wl=null}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running)getWL()});
-function play(){if(idx>=seq.length){startRun(cur)}running=true;last=performance.now();$('bStart').textContent='Pause';beep(880,.15);if(left===seq[idx].dur&&idx===0)say(seq[0].name);getWL();raf=requestAnimationFrame(tick)}
+function play(){if(idx>=seq.length){startRun(cur)}running=true;last=performance.now();$('bStart').textContent='Pause';S.beepSound==='classic'?tone(880,.15):playSound(S.beepSound);if(left===seq[idx].dur&&idx===0)say(seq[0].name);getWL();raf=requestAnimationFrame(tick)}
 function pause(){running=false;cancelAnimationFrame(raf);$('bStart').textContent='Resume';releaseWL()}
 $('bStart').onclick=()=>running?pause():play();
 $('bSkip').onclick=()=>{if(idx<seq.length)enter(idx+1)};
@@ -103,5 +193,9 @@ $('bReset').onclick=()=>{pause();startRun(cur)};
 $('bExit').onclick=()=>{pause();$('run').classList.remove('on')};
 window.__it={get state(){return{idx,left,running,len:seq.length,name:seq[idx]&&seq[idx].name}}};
 renderList();
-if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js');
+$('ver').textContent='Version '+VER+'.';
+if('serviceWorker'in navigator&&location.protocol!=='file:'){let had=!!navigator.serviceWorker.controller;
+navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had)$('toast').classList.add('on');had=true});
+navigator.serviceWorker.register('sw.js').then(r=>{document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')r.update().catch(()=>{})})}).catch(()=>{})}
+$('toast').onclick=()=>location.reload();
 </script></body></html>
